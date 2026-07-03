@@ -1,86 +1,135 @@
-# image-blur-agent
+# Anonymizer AI - Intelligent Face Blurring Privacy Shield
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `0.5.0`
-
-## Project Structure
-
-```
-image-blur-agent/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
-```
-
-> 💡 **Tip:** Use [Gemini CLI](https://github.com/google-gemini/gemini-cli) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
+Anonymizer AI is a modern, high-performance web application designed for fast and secure image anonymization. It leverages the **Google Gemini API** for smart face detection and age estimation, coupled with an **interactive drag-and-draw canvas** for manual censoring stencils.
 
 ---
 
-## Development
+## ✨ Key Features
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
+- 🤖 **Auto (AI) Mode:** Automatically detects all human faces in a photo and estimates their ages.
+- 👶 **Targeted Child Protection:** Toggle the "Only Children (Under 18)" mode to blur only minors' faces, leaving adults unblurred.
+- ✏️ **Manual Edit Canvas:** Click and drag directly on the original image to outline custom regions to blur.
+- 🟦 ⭕ **Oval & Square Stencils:** Switch shape segments on the fly before drawing custom blur regions.
+- 🗑️ **Interactive Selection Editing:** Click the trash icon on any face outline (whether detected by AI or drawn manually) to exclude it before committing changes.
+- 🔍 **Before/After Comparison Slider:** Use a side-by-side sliding divider overlay to compare the original and anonymized results.
+- ⚙️ **Fully Local Processing:** All image blurring calculations (Gaussian blur operations via Pillow) occur locally on the FastAPI backend, guaranteeing data security.
 
-## Deployment
+---
 
-```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
+## 🏗️ Project Structure
+
+```
+image-blur-agent/
+├── app/                        # FastAPI Backend & Agent logic
+│   ├── tools.py                # Core OpenCV/Pillow face detection & blurring stencils
+│   ├── fast_api_app.py         # REST endpoints for image processing
+│   └── agent.py                # ReAct agent handler definition
+├── frontend/                   # React + TypeScript Vite client
+│   ├── src/
+│   │   ├── App.tsx             # Interactive drag-and-draw workspace canvas
+│   │   └── index.css           # Styling system
+├── pyproject.toml              # Python backend dependencies
+└── uv.lock                     # Python locked dependencies
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+---
 
-## Observability
+## 🚀 Quick Start (Local Setup)
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
+### 1. Prerequisites
+- **uv:** Fast Python package manager ([Install Guide](https://docs.astral.sh/uv/getting-started/installation/))
+- **Node.js:** For building/running the React frontend
+
+### 2. Configure Environment Variables
+Copy `.env.example` to a new file named `.env` and fill in your credentials:
+```bash
+cp .env.example .env
+```
+Open `.env` and set your Google AI Studio API key:
+```ini
+GOOGLE_API_KEY=your_free_gemini_api_key_here
+```
+
+### 3. Start Python FastAPI Backend
+From the root directory, install Python dependencies and run the server:
+```bash
+# Install backend packages
+uv sync
+
+# Launch the FastAPI server (runs on port 8000)
+uv run python app/fast_api_app.py
+```
+
+### 4. Start Vite React Frontend
+In a new terminal window, navigate to the `frontend/` directory and spin up the developer server:
+```bash
+cd frontend
+
+# Install Node modules
+npm install
+
+# Run the dev server (runs on http://localhost:5173)
+npm run dev
+```
+
+---
+
+## 🛠️ Programmatic Usage (Bypassing the Frontend)
+
+If you need to process images programmatically or automate blurring in external applications, you can query the backend endpoints directly:
+
+### 1. REST API (`curl` example)
+Submit a `POST` request to `/api/blur-faces` with a base64 encoded image:
+
+```bash
+curl -X POST http://localhost:8000/api/blur-faces \
+  -H "Content-Type: application/json" \
+  -d '{
+    "image": "data:image/jpeg;base64,/9j/4AAQSk...",
+    "blur_only_children": false,
+    "skip_ai": false
+  }'
+```
+
+**JSON Response Schema:**
+```json
+{
+  "image_base64": "data:image/png;base64,iVBORw0KGg...",
+  "faces_details": [
+    {
+      "box_2d": [120, 340, 240, 480],
+      "age": 28,
+      "is_child": false,
+      "is_manual": false,
+      "shape": "square"
+    }
+  ],
+  "blurred_faces_count": 1
+}
+```
+
+### 2. Direct Python Script Call
+You can import the core blurring function directly into your Python scripts without launching a web server:
+
+```python
+import base64
+import json
+from app.tools import detect_and_blur_faces
+
+# 1. Encode local image to base64
+with open("test.jpg", "rb") as img_file:
+    base64_image = base64.b64encode(img_file.read()).decode("utf-8")
+
+# 2. Call the Pillow-based tool
+result_json = detect_and_blur_faces(
+    image_base64=base64_image,
+    blur_only_children=False
+)
+
+# 3. Decode and save result
+data = json.loads(result_json)
+output_b64 = data["image_base64"].split(",")[1] if "," in data["image_base64"] else data["image_base64"]
+
+with open("output_blurred.jpg", "wb") as out_file:
+    out_file.write(base64.b64decode(output_b64))
+```
