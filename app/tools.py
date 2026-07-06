@@ -38,7 +38,7 @@ def detect_and_blur_faces(
     Also accepts custom manual boxes to blur with specific shapes.
 
     Args:
-        image_base64: The base64-encoded image string.
+        image_base64: The base64-encoded image string, or a local file path to the image.
         blur_only_children: If True, only blurs faces estimated to be under 18 years old.
         manual_boxes: Optional list of manual boxes dicts: [{"box_2d": [ymin,xmin,ymax,xmax], "shape": "oval"|"square"}]
         skip_ai: If True, bypasses Gemini API face detection entirely.
@@ -48,6 +48,20 @@ def detect_and_blur_faces(
     """
     if not image_base64:
         return json.dumps({"error": "No image data provided."})
+
+    # Check if image_base64 is a local file path
+    is_file_path = False
+    if os.path.exists(image_base64) and os.path.isfile(image_base64):
+        is_file_path = True
+        input_path = image_base64
+        try:
+            with open(input_path, "rb") as f:
+                img_bytes = f.read()
+                ext = os.path.splitext(input_path)[1].lower()
+                mime = "image/png" if ext == ".png" else "image/jpeg"
+                image_base64 = f"data:{mime};base64,{base64.b64encode(img_bytes).decode('utf-8')}"
+        except Exception as e:
+            return json.dumps({"error": f"Failed to read local file path: {str(e)}"})
 
     # 1. Clean and Decode Base64
     img_format = "JPEG"
@@ -212,10 +226,25 @@ def detect_and_blur_faces(
     except Exception as e:
         return json.dumps({"error": f"Failed to encode blurred output image: {str(e)}"})
 
+    # If it was a file path, we can also save the output back to disk for CLI convenience
+    output_path = None
+    if is_file_path:
+        try:
+            base_dir, filename = os.path.split(input_path)
+            name, ext = os.path.splitext(filename)
+            output_path = os.path.join(base_dir, f"{name}_blurred{ext}")
+            
+            output_b64 = output_url.split(",")[1] if "," in output_url else output_url
+            with open(output_path, "wb") as f:
+                f.write(base64.b64decode(output_b64))
+        except Exception as e:
+            print(f"Failed to write output to file path: {str(e)}")
+
     return json.dumps({
         "status": "SUCCESS",
         "detected_faces_count": len(faces),
         "blurred_faces_count": blurred_count,
         "faces_details": faces_details,
-        "image_base64": output_url
+        "image_base64": output_url,
+        "output_path": output_path
     }, indent=2)
