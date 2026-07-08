@@ -12,6 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Stage 1: Build the React frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+COPY ./frontend/package*.json ./
+RUN npm ci
+COPY ./frontend ./
+RUN npm run build
+
+# Stage 2: Build the Python backend
 FROM python:3.12-slim
 
 RUN pip install --no-cache-dir uv==0.8.13
@@ -21,6 +30,7 @@ WORKDIR /code
 COPY ./pyproject.toml ./README.md ./uv.lock* ./
 
 COPY ./app ./app
+COPY --from=frontend-builder /app/dist ./frontend/dist
 
 RUN uv sync --frozen
 

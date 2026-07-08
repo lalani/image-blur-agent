@@ -32,7 +32,7 @@ artifact_service_uri = f"gs://{logs_bucket_name}" if logs_bucket_name else None
 
 app: FastAPI = get_fast_api_app(
     agents_dir=AGENT_DIR,
-    web=True,
+    web=False,
     artifact_service_uri=artifact_service_uri,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
@@ -76,6 +76,12 @@ def collect_feedback(feedback: Feedback) -> dict[str, str]:
     """Collect and log feedback."""
     logger.log_struct(feedback.model_dump(), severity="INFO")
     return {"status": "success"}
+
+# Serve compiled React frontend from frontend/dist
+from fastapi.staticfiles import StaticFiles
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
 
 # Main execution
 if __name__ == "__main__":
