@@ -1,5 +1,7 @@
 # Anonymizer AI - Intelligent Face Blurring Privacy Shield
 
+🚀 **Try it out here:** [https://image-blur-agent-320837497086.us-east1.run.app](https://image-blur-agent-320837497086.us-east1.run.app)
+
 Anonymizer AI is a modern, high-performance web application designed for fast and secure image anonymization. It leverages the **Google Gemini API** for smart face detection and age estimation, coupled with an **interactive drag-and-draw canvas** for manual censoring stencils.
 
 ---
